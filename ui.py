@@ -1,11 +1,27 @@
 """Native desktop frontend. Graphite shell, blue keycaps and live LCD preview."""
+import sys
 import tkinter as tk
 from tkinter import ttk
 from datetime import datetime
 from via import KEYCODES, key_name
+from paths import RESOURCES
 
 C={'base':'#202b3b','side':'#17212e','panel':'#29374b','edge':'#41526b',
    'text':'#ecf2f8','muted':'#a8b8ce','blue':'#60caff','action':'#357ef2'}
+
+class FlatButton(tk.Label):
+    """Clickable label: macOS Aqua ignores tk.Button background colors."""
+    def __init__(self,parent,command=None,**kwargs):
+        super().__init__(parent,**kwargs);self.command=command
+        self.bind('<Button-1>',lambda event:self.invoke())
+        self.bind('<Enter>',lambda event:self._hover('active'))
+        self.bind('<Leave>',lambda event:self._hover('normal'))
+    def _hover(self,state):
+        if str(self.cget('state'))!='disabled': self.configure(state=state)
+    def invoke(self):
+        if str(self.cget('state'))!='disabled' and self.command: self.command()
+
+Button=FlatButton if sys.platform=='darwin' else tk.Button
 
 def label(parent,text='',size=11,color=None,bg=None,weight='normal',**kwargs):
     return tk.Label(parent,text=text,fg=color or C['text'],bg=bg or parent.cget('bg'),
@@ -62,11 +78,14 @@ def build_ui(app):
     style.configure('Horizontal.TProgressbar',background=C['blue'],troughcolor=C['side'],bordercolor=C['side'],lightcolor=C['blue'],darkcolor=C['blue'])
     root.option_add('*TCombobox*Listbox.background',C['side']);root.option_add('*TCombobox*Listbox.foreground',C['text'])
     sidebar=tk.Frame(root,bg=C['side'],width=176);sidebar.pack(side='left',fill='y');sidebar.pack_propagate(False)
-    label(sidebar,'TH80\nStudio',size=29,weight='bold',color=C['blue']).pack(anchor='w',padx=22,pady=(28,4))
+    app.window_icon=tk.PhotoImage(file=str(RESOURCES/'assets'/'icon-256.png'));root.iconphoto(True,app.window_icon)
+    app.brand_logo=tk.PhotoImage(file=str(RESOURCES/'assets'/'sidebar-logo.png'))
+    tk.Label(sidebar,image=app.brand_logo,bg=C['side']).pack(anchor='w',padx=22,pady=(26,14))
+    label(sidebar,'TH80\nStudio',size=29,weight='bold',color=C['blue']).pack(anchor='w',padx=22,pady=(0,4))
     label(sidebar,'Seu teclado. Seu estilo.',size=9,color=C['muted']).pack(anchor='w',padx=22,pady=(0,34))
     app.nav_buttons={};app.pages={}
     for key,name in [('images','Tela e GIF'),('clock','Relógio'),('keys','Teclas'),('lighting','Iluminação'),('manual','Manual')]:
-        button=tk.Button(sidebar,text=name,anchor='w',bg=C['side'],fg=C['muted'],activebackground=C['panel'],activeforeground=C['text'],relief='flat',borderwidth=0,padx=18,pady=12,font=('Segoe UI',11),command=lambda p=key:app.show_page(p),takefocus=True)
+        button=Button(sidebar,text=name,anchor='w',bg=C['side'],fg=C['muted'],activebackground=C['panel'],activeforeground=C['text'],relief='flat',borderwidth=0,padx=18,pady=12,font=('Segoe UI',11),command=lambda p=key:app.show_page(p),takefocus=True)
         button.pack(fill='x',padx=10,pady=3);app.nav_buttons[key]=button
     label(sidebar,'EPOMAKER\nTH80 Pro V2\nConexão USB',size=10,color=C['muted'],justify='left').pack(side='bottom',anchor='w',padx=22,pady=25)
     shell=tk.Frame(root,bg=C['base']);shell.pack(side='left',fill='both',expand=True)
@@ -156,7 +175,7 @@ def build_ui(app):
     palette=tk.Frame(light_panel,bg=C['panel']);palette.pack(fill='x',pady=(0,10))
     app.color='#60caff';app.color_buttons=[]
     for color in ['#60caff','#9678fa','#f478a3','#f4c765','#ffffff']:
-        button=tk.Button(palette,text='●',font=('Segoe UI',20),bg=C['panel'],fg=color,activebackground=C['edge'],activeforeground=color,relief='flat',width=3,command=lambda c=color:app.choose_color(c),state='disabled')
+        button=Button(palette,text='●',font=('Segoe UI',20),bg=C['panel'],fg=color,activebackground=C['edge'],activeforeground=color,relief='flat',width=3,command=lambda c=color:app.choose_color(c),state='disabled')
         button.pack(side='left',padx=(0,8));app.color_buttons.append(button)
     app.color_info=label(light_panel,'Cor: azul',color=C['muted'],size=10);app.color_info.pack(anchor='w',pady=(0,8))
     app.color_picker=ttk.Button(light_panel,text='Roda de cores / HEX…',command=app.pick_color,state='disabled');app.color_picker.pack(anchor='w',pady=(0,12))

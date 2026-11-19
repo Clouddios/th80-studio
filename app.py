@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
 
-ROOT=Path(__file__).resolve().parent
+from paths import RESOURCES, DATA as ROOT
 MAX_NATIVE_BRIGHTNESS=9  # Observed on this TH80; reference protocol agrees.
 NATIVE_EFFECTS=(1,3,13,16)
 NATIVE_SPEEDS=(2,4)
@@ -24,7 +24,7 @@ from keyboard_layout import parse_layout
 from lighting_catalog import load_catalog, import_captures, observe_configuration
 from color_wheel import normalize_hex, rgb_configuration, ask_color
 
-DEFINITION=json.loads((ROOT/'via-definition.json').read_text(encoding='utf-8-sig'))
+DEFINITION=json.loads((RESOURCES/'via-definition.json').read_text(encoding='utf-8-sig'))
 KEY_LAYOUT=parse_layout(DEFINITION['layouts']['keymap'],8,16)
 
 def read_via(layer,progress):
@@ -287,6 +287,10 @@ class App:
     native_speeds=NATIVE_SPEEDS
     native_colors=NATIVE_COLORS
     def __init__(self):
+        if sys.platform=='darwin':
+            # hidapi binds its IOHIDManager to the run loop of the first thread that uses it.
+            # Initialize on the main thread so hid_exit at quit doesn't touch a dead worker run loop.
+            import hid;hid.enumerate(0x320f,0x5055)
         self.root=tk.Tk()
         self.root.title('TH80 Studio')
         self.root.geometry('1120x820')

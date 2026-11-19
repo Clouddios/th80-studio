@@ -41,7 +41,7 @@ class ViaDevice:
             self.handle.close();self.save_trace();raise
         return self
     def save_trace(self):
-        root=Path(__file__).resolve().parent
+        from paths import DATA as root
         content=json.dumps(self.trace,ensure_ascii=False,indent=2)
         archive=root/'registros-via';archive.mkdir(exist_ok=True)
         (archive/(datetime.now().strftime('%Y%m%d-%H%M%S-%f')+'.json')).write_text(content,encoding='utf-8')

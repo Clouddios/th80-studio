@@ -3,6 +3,7 @@ import unittest
 import tempfile
 from unittest.mock import patch
 import via
+import paths
 from pathlib import Path
 from via import request, choose_interface, get_keycode, set_keycode, read_lighting, write_lighting, ViaDevice, read_keymap
 from keyboard_layout import parse_layout
@@ -38,7 +39,7 @@ class ViaTests(unittest.TestCase):
         with self.assertRaises(ValueError): read_keymap(lambda *args:self.fail('unexpected USB command'),8,8,16)
 
     def test_trace_archive_preserves_each_session(self):
-        with tempfile.TemporaryDirectory() as folder, patch.object(via,'__file__',str(Path(folder)/'via.py')):
+        with tempfile.TemporaryDirectory() as folder, patch.object(paths,'DATA',Path(folder)):
             device=ViaDevice();device.trace=[{'command':4}];device.save_trace()
             device.trace=[{'command':8}];device.save_trace()
             traces=[json.loads(file.read_text()) for file in (Path(folder)/'registros-via').glob('*.json')]
